@@ -14,6 +14,11 @@ class JWTMiddleware(object):
         self.algorithm = options['algorithm']  # str
         self.exempt_resource = options['exempt_resources']  # list of dicts
         self.exempt_all_methods = options['exempt_all_methods']  # list of string
+        self.log_level = options.get('log_level')
+
+        if self.log_level:
+            logger.setLevel(self.log_level)
+
         logger.info(options)
 
     def __check_exempt_resource(self, resource, method):
@@ -31,9 +36,12 @@ class JWTMiddleware(object):
             return
 
         check_exempt_resource = self.__check_exempt_resource(resource.__class__.__name__, client_method)
+
+        _is_pass = False
+
         if check_exempt_resource:
             logger.info('{0} method exempt at {1}'.format(client_method, resource.__class__.__name__))
-            return
+            _is_pass = True
 
         try:
             token = req.headers.get('AUTHORIZATION', '').partition('Bearer ')[2]
@@ -45,7 +53,8 @@ class JWTMiddleware(object):
                 params['jwt_claims'][claim] = payload[claim]
 
         except Exception as e:
-            logger.exception(e)
-            raise falcon.HTTPUnauthorized('Invalid Authorization')
-
-        logger.info('payload: %s', payload)
+            if _is_pass:
+                params['jwt_claims'] = {}
+            else:
+                logger.exception(e)
+                raise falcon.HTTPUnauthorized('Invalid Authorization')
