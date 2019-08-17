@@ -31,15 +31,14 @@ class JWTMiddleware(object):
     def process_resource(self, req, resp, resource, params):
         client_method = req.method
 
-        if client_method in self.exempt_all_methods:
-            logger.info('{} method is existing in exempt_all_methods list'.format(client_method))
-            return
-
-        check_exempt_resource = self.__check_exempt_resource(resource.__class__.__name__, client_method)
-
         _is_pass = False
 
-        if check_exempt_resource:
+        if client_method in self.exempt_all_methods:
+            logger.info('{} method is existing in exempt_all_methods list'.format(client_method))
+            _is_pass = True
+
+        elif self.__check_exempt_resource(resource.__class__.__name__,
+                                          client_method):
             logger.info('{0} method exempt at {1}'.format(client_method, resource.__class__.__name__))
             _is_pass = True
 
@@ -54,7 +53,7 @@ class JWTMiddleware(object):
 
         except Exception as e:
             if _is_pass:
-                params['jwt_claims'] = {}
+                return
             else:
                 logger.exception(e)
                 raise falcon.HTTPUnauthorized('Invalid Authorization')
