@@ -10,8 +10,8 @@ setup(
     packages=find_packages(),
     url='https://github.com/tavanarad/CG-falcon-jwt',
     license='MIS',
-    author=['Morteza Tavanarad', 'Mostafa Khaki'],
-    author_email=['tavanarad@gmail.com', 'mostafakhaki00@gmail.com'],
+    author='Morteza Tavanarad',
+    author_email='tavanarad@gmail.com',
     description='A falcon middleware to handle the JWT header',
     install_requires=install_req
 )
