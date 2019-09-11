@@ -1,3 +1,5 @@
+from typing import List, Callable
+
 import falcon
 from cheeta_jwt.helper import JWTHelper as Jwt
 from cheeta_jwt.helper.log_helper import Log
@@ -9,12 +11,14 @@ logger = log.logger()
 class JWTMiddleware(object):
     """for more information visit 'API.MD' in ..docs/"""
 
-    def __init__(self, options: dict):
+    def __init__(self, options: dict, validators: List[Callable] = None):
         self.secret = options['secret']  # str
         self.algorithm = options['algorithm']  # str
         self.exempt_resource = options['exempt_resources']  # list of dicts
         self.exempt_all_methods = options['exempt_all_methods']  # list of string
         self.log_level = options.get('log_level')
+
+        self.validators = validators
 
         if self.log_level:
             logger.setLevel(self.log_level)
@@ -46,14 +50,23 @@ class JWTMiddleware(object):
             token = req.headers.get('AUTHORIZATION', '').partition('Bearer ')[2]
             payload = Jwt.decode(token, self.secret, self.algorithm)
 
-            params['jwt_claims'] = {}
+            if self.validators:
+                list(map(lambda x: x(payload), self.validators))
+                params['jwt_claims'] = {}
 
-            for claim in payload:
-                params['jwt_claims'][claim] = payload[claim]
+                for claim in payload:
+                    params['jwt_claims'][claim] = payload[claim]
+
+            else:
+
+                params['jwt_claims'] = {}
+
+                for claim in payload:
+                    params['jwt_claims'][claim] = payload[claim]
 
         except Exception as e:
             if _is_pass:
                 return
             else:
                 logger.exception(e)
-                raise falcon.HTTPUnauthorized('Invalid Authorization')
+                raise falcon.HTTPUnauthorized('Invalid Authorization', e.__dict__)
