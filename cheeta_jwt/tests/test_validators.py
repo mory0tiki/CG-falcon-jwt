@@ -79,7 +79,7 @@ class TestValidator2:
 
         assert result.status == falcon.HTTP_OK
 
-        assert 'arg' in result.json['jwt_claims']
+        assert 'arg' not in result.json['jwt_claims']
         assert result.json['jwt_claims']['user'] == 123
 
 
@@ -106,10 +106,10 @@ class TestValidator3:
         result = client_validator.simulate_get(path='/ValidatorResource',
                                                headers=headers)
 
-        assert result.status == falcon.HTTP_OK
-
-        assert 'arg' not in result.json['jwt_claims']
-        assert result.json['jwt_claims'] == {'user': 123}
+        assert result.status == falcon.HTTP_UNAUTHORIZED
+        #
+        # assert 'arg' not in result.json['jwt_claims']
+        # assert result.json['jwt_claims'] == {'user': 123}
 
 
 class TestValidator4:
