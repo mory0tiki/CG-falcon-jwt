@@ -1,3 +1,4 @@
+from copy import deepcopy
 from typing import List, Callable
 
 import falcon
@@ -53,22 +54,22 @@ class JWTMiddleware(object):
 
             if self.validators:
                 try:
-                    list(map(lambda x: x(payload), self.validators))
+                    list(map(lambda x: x(deepcopy(payload)), self.validators))
                     params['jwt_claims'] = {}
 
                     for claim in payload:
                         params['jwt_claims'][claim] = payload[claim]
                 except Exception as e:
                     logger.exception(e)
-                    raise ValidatorException
+                    raise ValidatorException(e)
             else:
 
                 params['jwt_claims'] = {}
 
                 for claim in payload:
                     params['jwt_claims'][claim] = payload[claim]
-        except ValidatorException:
-            raise falcon.HTTPUnauthorized('Something went wrong in Validators!')
+        except ValidatorException as e:
+            raise falcon.HTTPUnauthorized('Invalid Token', description=e.__str__())
         except Exception as e:
             if _is_pass:
                 return
