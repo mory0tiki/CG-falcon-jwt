@@ -3,6 +3,7 @@ from typing import List, Callable
 import falcon
 from cheeta_jwt.helper import JWTHelper as Jwt
 from cheeta_jwt.helper.log_helper import Log
+from cheeta_jwt.exception import ValidatorException
 
 log = Log(__name__)
 logger = log.logger()
@@ -51,19 +52,23 @@ class JWTMiddleware(object):
             payload = Jwt.decode(token, self.secret, self.algorithm)
 
             if self.validators:
-                list(map(lambda x: x(payload), self.validators))
-                params['jwt_claims'] = {}
+                try:
+                    list(map(lambda x: x(payload), self.validators))
+                    params['jwt_claims'] = {}
 
-                for claim in payload:
-                    params['jwt_claims'][claim] = payload[claim]
-
+                    for claim in payload:
+                        params['jwt_claims'][claim] = payload[claim]
+                except Exception as e:
+                    logger.exception(e)
+                    raise ValidatorException
             else:
 
                 params['jwt_claims'] = {}
 
                 for claim in payload:
                     params['jwt_claims'][claim] = payload[claim]
-
+        except ValidatorException:
+            raise falcon.HTTPUnauthorized('Something went wrong in Validators!')
         except Exception as e:
             if _is_pass:
                 return
